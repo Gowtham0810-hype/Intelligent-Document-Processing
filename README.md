@@ -83,6 +83,11 @@ streamlit run app.py
    - Use the "Export to Excel" button for spreadsheet format
    - Use the "Export to JSON" button for structured data format
 
+## Screenshots
+### payment receipt image as pdf
+![restaurant bill](images/bill.png)
+### web app screenshot
+![web app output](images/outputss.png)
 ## 🔧 Technical Details
 
 ### Components
