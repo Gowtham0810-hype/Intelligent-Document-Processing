@@ -85,9 +85,10 @@ streamlit run app.py
 
 ## Screenshots
 ### payment receipt image as pdf
-![restaurant bill](images/bill.png)
+![restaurant bill](images/receipt.png)
 ### web app screenshot
-![web app output](images/outputss.png)
+![web app output](images/output2.png)
+![web app output](images/output1.png)
 ## 🔧 Technical Details
 
 ### Components
