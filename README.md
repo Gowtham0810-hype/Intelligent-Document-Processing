@@ -85,10 +85,12 @@ streamlit run app.py
 
 ## Screenshots
 ### payment receipt image as pdf
-![restaurant bill](images/receipt.png)
+<img src="images/receipt.png" alt="Screenshot of the Receipt" width="350" height="500">
+
 ### web app screenshot
 ![web app output](images/output2.png)
 ![web app output](images/output1.png)
+![web app output](images/output3.png)
 ## 🔧 Technical Details
 
 ### Components
