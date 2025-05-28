@@ -107,17 +107,3 @@ streamlit run app.py
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 🙏 Acknowledgments
-
-- [Groq](https://groq.com) for their powerful LLM API
-- [Streamlit](https://streamlit.io) for the amazing UI framework
-- [EasyOCR](https://github.com/JaidedAI/EasyOCR) for OCR capabilities
-- [PyMuPDF](https://github.com/pymupdf/PyMuPDF) for PDF processing
-
-## 📞 Support
-
-For support, please open an issue in the GitHub repository or contact the maintainers.
