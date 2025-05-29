@@ -1,5 +1,5 @@
 # Intelligent-Document-Processing
-A powerful PDF data extraction tool that uses Groq's LLM API to intelligently process and extract structured data from both text-based and image-based PDFs. Built with Streamlit for a modern, user-friendly interface.
+A powerful PDF data extraction tool that uses Groq's LLM API to intelligently process and extract structured data from both text-based and image-based PDFs. Built with FLask and html for a modern, user-friendly interface.
 
 ## 🌟 Features
 
@@ -18,12 +18,11 @@ A powerful PDF data extraction tool that uses Groq's LLM API to intelligently pr
     - Line items with quantities and prices
     - Tax information and totals
 
-- **Interactive UI**
-  - Modern Streamlit interface
-  - Real-time data editing capabilities
-  - Interactive tables with sorting and filtering
+- **Backend**
+  - Flask
+  - Real-time data change compatibility
   - Live preview of extracted data
-  - Dynamic updates of calculations
+  - with html provides ui
 
 - **Export Options**
   - Excel export with multiple sheets
@@ -61,7 +60,7 @@ api_key=your_api_key_here
 
 Start the application with:
 ```bash
-streamlit run app.py
+python app.py
 ```
 
 ## 📖 Usage
@@ -96,7 +95,8 @@ streamlit run app.py
 
 ### Components
 
-- **Frontend**: Streamlit
+- **Frontend**: Html
+- **Backend**: Flask
 - **PDF Processing**: PyMuPDF (fitz)
 - **OCR Engine**: EasyOCR
 - **LLM Integration**: Groq API
