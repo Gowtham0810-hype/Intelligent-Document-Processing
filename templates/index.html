@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligent Data Processor</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .drag-drop-zone {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        .drag-drop-zone.dragover {
+            border-color: #4299e1;
+            background-color: #ebf8ff;
+        }
+        .loading {
+            display: none;
+        }
+        .loading.active {
+            display: flex;
+        }
+        .results {
+            display: none;
+        }
+        .results.active {
+            display: block;
+        }
+        /* Add styles for the processing state of the button */
+        .processing {
+            cursor: not-allowed;
+            position: relative;
+            color: transparent !important;
+        }
+        .processing::after {
+            content: "";
+            position: absolute;
+            width: 1.5rem;
+            height: 1.5rem;
+            top: 50%;
+            left: 50%;
+            margin-top: -0.75rem;
+            margin-left: -0.75rem;
+            border: 2px solid white;
+            border-radius: 50%;
+            border-right-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen p-6">
+        <!-- Header -->
+        <header class="max-w-4xl mx-auto mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Intelligent Data Processor</h1>
+            <p class="text-gray-600">Upload your PDF documents for intelligent data extraction</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-4xl mx-auto">
+            <!-- Upload Section -->
+            <section class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <div id="dropZone" class="drag-drop-zone rounded-lg p-8 text-center cursor-pointer">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 mb-2">Drag and drop your PDF file here</p>
+                    <p class="text-gray-500 text-sm">or</p>
+                    <button id="browseButton" class="mt-4 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                        Browse Files
+                    </button>
+                    <input type="file" id="fileInput" class="hidden" accept=".pdf">
+                </div>
+                <!-- Selected File Display -->
+                <div id="selectedFile" class="hidden mt-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-file-pdf text-red-500 text-2xl mr-3"></i>
+                        <div class="flex-grow">
+                            <p id="fileName" class="text-gray-800 font-medium"></p>
+                            <p id="fileSize" class="text-gray-500 text-sm"></p>
+                        </div>
+                        <button id="removeFile" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <button id="processButton" class="mt-4 w-full px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                        Process Document
+                    </button>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section id="results" class="results bg-white rounded-lg shadow-md p-6">
+                <!-- Tabs -->
+                <div class="border-b border-gray-200 mb-6">
+                    <nav class="flex -mb-px">
+                        <button class="tab-button active mr-8 py-4 px-1 border-b-2 border-blue-500 font-medium text-blue-600" data-tab="docInfo">
+                            Document Info
+                        </button>
+                        <button class="tab-button mr-8 py-4 px-1 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="lineItems">
+                            Line Items
+                        </button>
+                        <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="rawJson">
+                            Raw JSON
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Tab Content -->
+                <div id="docInfo" class="tab-content active">
+                    <div id="docInfoContent" class="grid grid-cols-2 gap-4"></div>
+                </div>
+
+                <div id="lineItems" class="tab-content hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr id="lineItemsHeader"></tr>
+                            </thead>
+                            <tbody id="lineItemsBody" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                        <div id="totalAmount" class="mt-4 text-right font-bold"></div>
+                    </div>
+                </div>
+
+                <div id="rawJson" class="tab-content hidden">
+                    <pre id="jsonContent" class="bg-gray-50 p-4 rounded-lg overflow-x-auto"></pre>
+                </div>
+
+                <!-- Export Buttons -->
+                <div class="mt-8 flex justify-end space-x-4">
+                    <button id="exportExcel" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                        <i class="fas fa-file-excel mr-2"></i>Export to Excel
+                    </button>
+                    <button id="exportJson" class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
+                        <i class="fas fa-file-code mr-2"></i>Export to JSON
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Global variable to store the processed data and selected file
+        let processedData = null;
+        let selectedFile = null;
+
+        // Utility function to format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Utility function to format currency
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            }).format(amount);
+        }
+
+        // File upload handling
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const browseButton = document.getElementById('browseButton');
+        const results = document.getElementById('results');
+        const selectedFileDiv = document.getElementById('selectedFile');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const removeFile = document.getElementById('removeFile');
+        const processButton = document.getElementById('processButton');
+
+        // Function to update selected file display
+        function updateSelectedFileDisplay(file) {
+            selectedFile = file;
+            if (file) {
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                selectedFileDiv.classList.remove('hidden');
+                dropZone.classList.add('hidden');
+                // Hide results if they were showing
+                results.classList.remove('active');
+            } else {
+                selectedFileDiv.classList.add('hidden');
+                dropZone.classList.remove('hidden');
+                results.classList.remove('active');
+            }
+        }
+
+        // Remove file handler
+        removeFile.addEventListener('click', () => {
+            updateSelectedFileDisplay(null);
+            fileInput.value = '';
+        });
+
+        // Process button handler
+        processButton.addEventListener('click', () => {
+            if (selectedFile) {
+                processFile(selectedFile);
+            }
+        });
+
+        // Drag and drop handlers
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === 'application/pdf') {
+                updateSelectedFileDisplay(file);
+            } else {
+                alert('Please upload a PDF file');
+            }
+        });
+
+        browseButton.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                updateSelectedFileDisplay(file);
+            }
+        });
+
+        // File processing
+        async function processFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Update button to loading state
+            processButton.classList.add('processing');
+            processButton.disabled = true;
+            results.classList.remove('active');
+
+            try {
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Processing failed');
+                }
+
+                processedData = await response.json();
+                displayResults(processedData);
+            } catch (error) {
+                alert('Error processing file: ' + error.message);
+            } finally {
+                // Reset button state
+                processButton.classList.remove('processing');
+                processButton.disabled = false;
+            }
+        }
+
+        // Display results
+        function displayResults(data) {
+            results.classList.add('active');
+
+            // Document Info
+            const docInfoContent = document.getElementById('docInfoContent');
+            docInfoContent.innerHTML = '';
+            for (const [key, value] of Object.entries(data)) {
+                if (key !== 'items' && key !== 'metadata') {
+                    const div = document.createElement('div');
+                    div.className = 'p-4 bg-gray-50 rounded-lg';
+                    div.innerHTML = `
+                        <label class="block text-sm font-medium text-gray-700">${key}</label>
+                        <div class="mt-1 text-gray-900">${value}</div>
+                    `;
+                    docInfoContent.appendChild(div);
+                }
+            }
+
+            // Line Items
+            const header = document.getElementById('lineItemsHeader');
+            const body = document.getElementById('lineItemsBody');
+            const totalAmount = document.getElementById('totalAmount');
+            
+            // Clear previous content
+            header.innerHTML = '';
+            body.innerHTML = '';
+            totalAmount.textContent = '';
+
+            if (data.items && data.items.length > 0) {
+                // Create header
+                header.innerHTML = Object.keys(data.items[0]).map(key => 
+                    `<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        ${key}
+                    </th>`
+                ).join('');
+
+                // Create body
+                body.innerHTML = data.items.map(item => `
+                    <tr>
+                        ${Object.values(item).map(value => 
+                            `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                ${typeof value === 'number' ? formatCurrency(value) : value}
+                            </td>`
+                        ).join('')}
+                    </tr>
+                `).join('');
+
+                // Calculate total
+                if (data.items[0].line_total) {
+                    const total = data.items.reduce((sum, item) => sum + item.line_total, 0);
+                    totalAmount.textContent = `Total: ${formatCurrency(total)}`;
+                }
+            }
+
+            // Raw JSON
+            document.getElementById('jsonContent').textContent = JSON.stringify(data, null, 2);
+        }
+
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                // Update button states
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    btn.classList.remove('border-blue-500', 'text-blue-600');
+                    btn.classList.add('border-transparent', 'text-gray-500');
+                });
+                button.classList.remove('border-transparent', 'text-gray-500');
+                button.classList.add('border-blue-500', 'text-blue-600');
+
+                // Update content visibility
+                const tabId = button.getAttribute('data-tab');
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                document.getElementById(tabId).classList.remove('hidden');
+            });
+        });
+
+        // Export handlers
+        document.getElementById('exportExcel').addEventListener('click', async () => {
+            if (!processedData) return;
+
+            try {
+                const response = await fetch('/export/excel', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(processedData)
+                });
+
+                if (!response.ok) throw new Error('Export failed');
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `extracted_data_${new Date().toISOString().slice(0,10)}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            } catch (error) {
+                alert('Error exporting to Excel: ' + error.message);
+            }
+        });
+
+        document.getElementById('exportJson').addEventListener('click', async () => {
+            if (!processedData) return;
+
+            try {
+                const response = await fetch('/export/json', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(processedData)
+                });
+
+                if (!response.ok) throw new Error('Export failed');
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `extracted_data_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            } catch (error) {
+                alert('Error exporting to JSON: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html> 
