@@ -88,8 +88,8 @@ streamlit run app.py
 <img src="images/receipt.png" alt="Screenshot of the Receipt" width="350" height="500">
 
 ### web app screenshot
-![web app output](images/output2.png)
 ![web app output](images/output1.png)
+![web app output](images/output2.png)
 ![web app output](images/output3.png)
 ## 🔧 Technical Details
 
