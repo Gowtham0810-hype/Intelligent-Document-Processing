@@ -87,7 +87,7 @@ python app.py
 <img src="images/receipt.png" alt="Screenshot of the Receipt" width="350" height="500">
 
 ### web app screenshot
-<img src="images/output1.png" alt="website output" width="600" height="380">
+<img src="images/Screenshot 2025-05-29 142617.png" alt="website output" width="600" height="380">
 <img src="images/output2.png" alt="website output" width="600" height="380">
 <img src="images/output3.png" alt="website output" width="350" height="500">
 
