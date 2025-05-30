@@ -83,13 +83,13 @@ python app.py
    - Use the "Export to JSON" button for structured data format
 
 ## Screenshots
-### payment receipt image as pdf
-<img src="images/receipt.png" alt="Screenshot of the Receipt" width="350" height="500">
+### invoicet image as pdf
+<img src="images/invoice_example.png" alt="Screenshot of the Receipt" width="350" height="500">
 
 ### web app screenshot
-<img src="images/Screenshot 2025-05-29 142617.png" alt="website output" width="600" height="380">
-<img src="images/output2.png" alt="website output" width="600" height="380">
-<img src="images/output3.png" alt="website output" width="350" height="500">
+<img src="images/1.png" alt="website output" width="600" height="380">
+<img src="images/2.png" alt="website output" width="600" height="380">
+<img src="images/3.png" alt="website output" width="350" height="500">
 
 ## 🔧 Technical Details
 
