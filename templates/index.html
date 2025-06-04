@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Image Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .page-section {
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+        }
+        .json-view {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <h1 class="mb-4">PDF Image Analyzer</h1>
+        
+        <!-- Upload Form -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form id="uploadForm">
+                    <div class="mb-3">
+                        <label for="pdfFile" class="form-label">Select PDF File</label>
+                        <input type="file" class="form-control" id="pdfFile" accept=".pdf" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Process PDF</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="loading">
+            <div class="spinner-border loading-spinner text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">Processing PDF... This may take a few minutes.</p>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2>Results</h2>
+                <button id="exportBtn" class="btn btn-success">
+                    <i class="bi bi-file-earmark-excel"></i> Export to Excel
+                </button>
+            </div>
+            
+            <!-- Pages Accordion -->
+            <div class="accordion" id="pagesAccordion"></div>
+        </div>
+
+        <!-- Error Alert -->
+        <div id="errorAlert" class="alert alert-danger" style="display: none;" role="alert"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            const fileInput = document.getElementById('pdfFile');
+            formData.append('file', fileInput.files[0]);
+
+            // Show loading, hide other sections
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('errorAlert').style.display = 'none';
+
+            try {
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to process PDF');
+                }
+
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                document.getElementById('errorAlert').textContent = error.message;
+                document.getElementById('errorAlert').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+
+        function displayResults(data) {
+            const accordion = document.getElementById('pagesAccordion');
+            accordion.innerHTML = '';
+
+            data.pages.forEach((page, index) => {
+                const pageNum = page.page_number;
+                const pageHtml = `
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading${pageNum}">
+                            <button class="accordion-button ${index === 0 ? '' : 'collapsed'}" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#collapse${pageNum}">
+                                Page ${pageNum}
+                            </button>
+                        </h2>
+                        <div id="collapse${pageNum}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}"
+                             data-bs-parent="#pagesAccordion">
+                            <div class="accordion-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h4>Document Info</h4>
+                                        <p><strong>Type:</strong> ${page.document_type || 'N/A'}</p>
+                                        
+                                        <h4>Key Fields</h4>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <tbody>
+                                                    ${Object.entries(page.key_fields || {}).map(([key, value]) => `
+                                                        <tr>
+                                                            <td><strong>${key}:</strong></td>
+                                                            <td>${value}</td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h4>Tables</h4>
+                                        ${page.tables && page.tables.length > 0 ? 
+                                            page.tables.map(table => `
+                                                <div class="mb-4">
+                                                    <h5>${table.table_name || 'Unnamed Table'}</h5>
+                                                    ${table.items && table.items.length > 0 ? `
+                                                        <div class="table-responsive">
+                                                            <table class="table table-sm">
+                                                                <thead>
+                                                                    <tr>
+                                                                        ${Object.keys(table.items[0]).map(key => `
+                                                                            <th>${key}</th>
+                                                                        `).join('')}
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    ${table.items.map(item => `
+                                                                        <tr>
+                                                                            ${Object.values(item).map(value => `
+                                                                                <td>${value}</td>
+                                                                            `).join('')}
+                                                                        </tr>
+                                                                    `).join('')}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    ` : '<p>No items in this table</p>'}
+                                                </div>
+                                            `).join('')
+                                        : page.items && page.items.length > 0 ? `
+                                            <div class="table-responsive">
+                                                <table class="table table-sm">
+                                                    <thead>
+                                                        <tr>
+                                                            ${Object.keys(page.items[0]).map(key => `
+                                                                <th>${key}</th>
+                                                            `).join('')}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        ${page.items.map(item => `
+                                                            <tr>
+                                                                ${Object.values(item).map(value => `
+                                                                    <td>${value}</td>
+                                                                `).join('')}
+                                                            </tr>
+                                                        `).join('')}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        ` : '<p>No tables found</p>'}
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <h4>Raw JSON</h4>
+                                    <div class="json-view">${JSON.stringify(page, null, 2)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                accordion.insertAdjacentHTML('beforeend', pageHtml);
+            });
+
+            document.getElementById('results').style.display = 'block';
+        }
+
+        document.getElementById('exportBtn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/export', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(window.lastProcessedData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to export data');
+                }
+
+                // Create a temporary link to download the file
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'extracted_data.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            } catch (error) {
+                document.getElementById('errorAlert').textContent = error.message;
+                document.getElementById('errorAlert').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html> 
